@@ -62,3 +62,15 @@ export const tmdbOptions = (method: string = "GET") => ({
     }`,
   },
 });
+
+export interface GeoLocationResponse {
+  IPv4: string;
+  country_code: string;
+  country_name: string;
+  latitude: number;
+  longitude: number;
+}
+
+export interface UserAgent extends Geolocation {
+  agent: string;
+}
