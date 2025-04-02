@@ -1,5 +1,4 @@
 // GET, POST, PATCH, DELETE
-
 export async function GET() {
-  return Response.json({ message: "text api end point!" });
+  return Response.json({ message: "test api end point!" });
 }
