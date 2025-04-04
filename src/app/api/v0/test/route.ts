@@ -12,11 +12,13 @@ export async function GET(req: Request) {
 
   const res = await fetch(url);
   const data = await res.json();
+
   if (data.response.header.resultCode === "01") {
     return Response.json(null, {
       status: 500,
       statusText: data.response.header.resultMsg,
     });
   }
+
   return Response.json(data.response);
 }

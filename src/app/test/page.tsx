@@ -4,10 +4,9 @@ const onLoad = async (): Promise<any | { message: string }> => {
   const res = await fetch(`${process.env.NEXT_PUBLIC_URL}/api/v0/test`);
 
   if (!res.ok) {
-    console.log("error:", res.statusText);
-    return { message: res.headers };
+    console.log("error:", res.statusText, 7);
+    return { message: res.statusText };
   }
-
   const data = await res.json();
 
   return data;

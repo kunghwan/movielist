@@ -1,23 +1,9 @@
 "use client";
-
-import { useCallback, useEffect, useState } from "react";
 import { twMerge } from "tailwind-merge";
-import {
-  Chart,
-  Tooltip,
-  Legend,
-  ArcElement,
-  LineElement,
-  ActiveElement,
-  PointElement,
-  LegendElement,
-  registerables,
-} from "chart.js";
-import { Line } from "react-chartjs";
+import { useCallback, useEffect, useState } from "react";
+import { Chart, registerables } from "chart.js";
 import * as Charts from "react-chartjs-2";
 Chart.register(...registerables);
-
-Chart.register(ArcElement, Tooltip, Legend);
 
 interface WProps {
   baseDate: string;
@@ -29,7 +15,6 @@ interface WProps {
   nx: number;
   ny: number;
 }
-
 const categories: ShortCategory[] = [
   "강수확률",
   "강수형태",
@@ -46,35 +31,44 @@ const categories: ShortCategory[] = [
   "풍향",
   "풍속",
 ];
-
 const WCom = (props: any | { message: string }) => {
   const [data, setData] = useState(props);
+
   const [category, setCategory] = useState<ShortCategory>("강수확률");
-
   const [items, setItems] = useState<WProps[]>([]);
-
-  const onTest = useCallback(() => {
-    // 데이터 필터링 및 최대 4개 항목만 보여주기
-    const filteredItems = data.body.items.item
-      .filter((item: WProps) => getShortValue(item.category) === category)
-      .slice(0, 4); // 4개 항목만
-    console.log(filteredItems);
-    setItems(filteredItems); // 상태 업데이트
-  }, [data, category]);
 
   useEffect(() => {
     if (data.message) {
       alert(data.message);
     } else {
-      // 페이지가 로드될 때 카테고리별로 데이터를 필터링하고 최대 4개 항목만 보여주기
-      const filteredItems = data.body.items.item
-        .filter((item: WProps) => getShortValue(item.category) === category)
-        .slice(0, 4); // 최대 4개만
-      console.log(filteredItems);
-      setItems(filteredItems); // 상태 업데이트
+      //! data 가공
+      const copy: WProps[] = [];
+      data.body.items.item.map((item: WProps) => {
+        const found = getShortValue(item.category) === category;
+        if (found) {
+          copy.push(item);
+        }
+      });
+
+      console.log(copy);
+      setItems(copy);
     }
   }, [data, category]);
 
+  const onTest = useCallback(() => {
+    let totalPage = 0;
+    totalPage = Math.ceil(data.body.totalCount / data.body.numOfRows);
+    const copy: WProps[] = [];
+    data.body.items.item.map((item: WProps) => {
+      const found = getShortValue(item.category) === category;
+      if (found) {
+        copy.push(item);
+      }
+    });
+
+    console.log(copy);
+    setItems(copy);
+  }, [data, category]);
   return (
     <div className="mt-[1px]">
       <ul className="flex overflow-x-auto">
@@ -93,44 +87,28 @@ const WCom = (props: any | { message: string }) => {
           </li>
         ))}
       </ul>
+      <button onClick={onTest}>{category}</button>
       {/* <ul>
         {items.map(({ category, fcstValue, baseTime, fcstTime }, index) => (
           <li key={index}>
-            [{getShortValue(category)}] - {fcstValue} ({baseTime}/예보시간:{" "}
+            [{getShortValue(category)}] - {fcstValue} ({baseTime}/예보시간:
             {fcstTime})
           </li>
         ))}
       </ul> */}
-      <button onClick={onTest}>{category}</button>
-      <div className="overflow-x-auto max-w-full">
-        <Charts.Line
-          data={{
-            labels: items.map((item) => item.fcstTime),
-            datasets: [
-              {
-                label: category,
-                data: items.map((item) => item.fcstValue),
-                borderWidth: 1,
-                backgroundColor: "red",
-                borderColor: "black",
-                pointBorderColor: "yellow",
-                capBezierPoints: true,
-                fill: true,
-                clip: 100,
-                pointBorderWidth: 4,
-                pointStyle: {
-                  style: {
-                    border: "2px solid black",
-                  },
-                },
-              },
-            ],
-          }}
-          style={{
-            width: "200vw",
-          }}
-        />
-      </div>
+      <Charts.Line
+        data={{
+          labels: items.map((item) => item.fcstTime),
+          datasets: [
+            {
+              label: category,
+              data: items.map((item) => item.fcstValue),
+              borderWidth: 1,
+              fill: true,
+            },
+          ],
+        }}
+      />
     </div>
   );
 };
@@ -199,7 +177,26 @@ const getShortValue = (target: ShortValueTarget): ShortCategory => {
       return "풍향";
     case "WSD":
       return "풍속";
-    default:
-      return "강수확률"; // default category 처리
   }
 };
+
+// import { Line } from 'react-chartjs-2';
+
+// <Line
+//   datasetIdKey='id'
+//   data={{
+//     labels: ['Jun', 'Jul', 'Aug'],
+//     datasets: [
+//       {
+//         id: 1,
+//         label: '',
+//         data: [5, 6, 7],
+//       },
+//       {
+//         id: 2,
+//         label: '',
+//         data: [3, 2, 1],
+//       },
+//     ],
+//   }}
+// />

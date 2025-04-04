@@ -1,6 +1,5 @@
 "use client";
-
-import { useTransition, useState, useRef, useCallback } from "react";
+import { useTransition, useState, useEffect, useRef, useCallback } from "react";
 import { AiOutlineSearch } from "react-icons/ai";
 import { twMerge } from "tailwind-merge";
 import RootLoading from "../loading";
@@ -12,30 +11,33 @@ import {
 } from "react-icons/io5";
 
 interface JusoProps {
-  bdMgtSn: string; // unique id
+  bdMgtSn: string; //! unique id
   roadAddr: string;
   siNm: string;
-  sggName: string;
+  sggNm: string;
   rn: string;
   zipNo: string;
 }
-
 const Juso = () => {
-  const [keyword, setKeyword] = useState(""); // 검색어
-  const [isShowing, setIsShowing] = useState(false); // 검색 결과 펼치기/접기
-  const [items, setItems] = useState<JusoProps[]>([]); // 검색 결과 아이템들
-  const [totalCount, setTotalCount] = useState(0); // 전체 결과 수
-  const [isPending, startTransition] = useTransition(); // 데이터 로딩 상태
-  const [currentPage, setCurrentPage] = useState(1); // 현재 페이지
+  const [keyword, setKeyword] = useState("");
+  const [isShowing, setIsShowing] = useState(false);
 
-  const [selectedJuso, setSelectedJuso] = useState<JusoProps | null>(null); // 선택된 주소
-  const [rest, setRest] = useState(""); // 나머지 주소
+  const [juso, setJuso] = useState<JusoProps | null>(null);
+  const [rest, setRest] = useState("");
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [items, setItems] = useState<JusoProps[]>([]);
+
   const keywordRef = useRef<HTMLInputElement>(null);
+  const restRef = useRef<HTMLInputElement>(null);
+
+  const [isPending, startTransition] = useTransition();
 
   const onSubmit = useCallback(
     (pageNo: number) => {
       if (keyword.length === 0) {
-        alert("검색어를 입력해 주세요.");
+        alert("검색어를 입력해주세요.");
         return keywordRef.current?.focus();
       }
       startTransition(async () => {
@@ -46,77 +48,54 @@ const Juso = () => {
 
         try {
           const data = await res.json();
-          console.log(data);
-          setIsShowing(true); // 데이터를 불러온 후 펼치기 버튼을 보이게 합니다.
-          setTotalCount(data.totalCount ?? 0);
-          setItems(data.items ?? []);
+          setIsShowing(true);
+          setTotalCount(data.totalCount);
+          setItems(data.items);
         } catch (error: any) {
-          console.error("Error fetching or parsing data:", error);
-          alert(error.message);
+          console.log(error);
         }
       });
     },
-    [keyword]
+    [keyword, juso]
   );
 
-  const getPaginationRange = () => {
-    const totalPages = Math.ceil(totalCount / 20);
-    let startPage = Math.max(currentPage - 2, 1);
-    let endPage = Math.min(currentPage + 2, totalPages);
-
-    const pages = [];
-    for (let i = startPage; i <= endPage; i++) {
-      pages.push(i);
-    }
-
-    return pages;
-  };
-
-  // 페이지를 한 칸 뒤로
-  const handlePrevPage = () => {
-    setCurrentPage((prevPage) => Math.max(prevPage - 1, 1)); // currentPage가 1 미만으로 내려가지 않도록 제한
-  };
-
-  // 페이지를 한 칸 앞으로
-  const handleNextPage = () => {
-    const totalPages = Math.ceil(totalCount / 20);
-    setCurrentPage(
-      (prevPage) => Math.min(prevPage + 1, totalPages) // currentPage가 totalPages를 넘지 않도록 제한
-    );
-  };
-
-  // 주소 저장 함수
   const onSaveJuso = useCallback(() => {
-    if (!selectedJuso) {
+    if (!juso) {
+      if (items.length === 0) {
+        alert("주소를 검색해주세요.");
+        setKeyword("");
+        setIsShowing(false);
+        return keywordRef.current?.focus();
+      }
       alert("주소를 선택해주세요.");
-      return;
+      return setIsShowing(true);
     }
     if (rest.length === 0) {
       alert("나머지 주소를 입력해주세요.");
-      return;
+      return restRef.current?.focus();
     }
 
     if (
       confirm(
-        `입력하신 주소가 ${selectedJuso.roadAddr}, ${rest}, 우편번호 ${selectedJuso.zipNo}가 맞으신가요?`
+        `입력하신 주소가 ${juso.roadAddr}, ${rest}, 우편번호 ${juso.zipNo}가 맞으신가요?`
       )
     ) {
-      alert("주소를 저장하였습니다.");
-      // 여기에서 저장 API 호출 등의 작업을 할 수 있습니다.
+      return alert("주소를 저장하였습니다.");
     }
-  }, [selectedJuso, rest]);
+    restRef.current?.focus();
+  }, [rest, juso, items]);
 
   return (
-    <div className="mt-5 max-w-75 mx-auto">
+    <div className="mt-5 max-w-100 mx-auto">
       {isPending && <RootLoading />}
       <form
         onSubmit={(e) => {
           e.preventDefault();
           onSubmit(currentPage);
         }}
-        className="max-w-75 mx-auto"
+        className="max-w-100 mx-auto"
       >
-        <div className="flex gap-x-2.5 gap-2.5 mt-2.5 mx-auto mx-w-75">
+        <div className="flex gap-x-2.5">
           <input
             type="text"
             value={keyword}
@@ -132,38 +111,45 @@ const Juso = () => {
         </div>
       </form>
 
-      {isShowing && (
-        <div>
-          {/* 펼치기/접기 버튼 */}
-          {items.length > 0 && (
-            <button
-              onClick={() => setIsShowing((prev) => !prev)}
-              className="my-3 text-sm font-medium text-sky-500 flex items-center"
-            >
-              {isShowing ? (
-                <>
-                  접기 <IoChevronUp className="ml-1 cursor-pointer" />
-                </>
-              ) : (
-                <>
-                  펼치기 <IoChevronDown className="ml-1" />
-                </>
-              )}
-            </button>
+      {items.length > 0 && (
+        <button
+          onClick={() => setIsShowing((prev) => !prev)}
+          className={twMerge(
+            btn,
+            "px-2.5 size-auto gap-x-2.5 py-1 mt-5 mb-2.5"
           )}
-
-          {/* 검색 결과 리스트 */}
-          {isShowing && items.length > 0 && (
-            <ul>
+        >
+          {!isShowing ? (
+            <>
+              펼치기
+              <IoChevronDown />
+            </>
+          ) : (
+            <>
+              접기
+              <IoChevronUp />
+            </>
+          )}
+        </button>
+      )}
+      {isShowing &&
+        (items.length > 0 ? (
+          <div>
+            <ul className="flex flex-col gap-y-2.5">
               {items.map((item) => {
-                const selected = item.bdMgtSn === selectedJuso?.bdMgtSn;
+                const selected = item.bdMgtSn === juso?.bdMgtSn;
                 return (
                   <li key={item.bdMgtSn} className="flex">
                     <button
-                      className={`bg-gray-300 p-2.5 cursor-pointer rounded hover:bg-gray-100 ${
-                        selected ? "bg-sky-200" : ""
-                      }`}
-                      onClick={() => setSelectedJuso(item)} // Set the selected address
+                      className={twMerge(
+                        "bg-gray-50 p-2.5 cursor-pointer rounded hover:bg-gray-100",
+                        selected && "bg-sky-500 text-white hover:bg-sky-400"
+                      )}
+                      onClick={() => {
+                        setJuso(item);
+                        setIsShowing(false);
+                        setTimeout(() => restRef.current?.focus(), 100);
+                      }}
                     >
                       {item.roadAddr}
                     </button>
@@ -171,53 +157,110 @@ const Juso = () => {
                 );
               })}
             </ul>
-          )}
+            <ul className="flex flex-wrap gap-2.5 my-2.5 justify-center">
+              {1 !== currentPage && (
+                <li>
+                  <button
+                    className={twMerge(btn, "size-8")}
+                    onClick={() => {
+                      let copy = currentPage;
+                      if (copy > 0) {
+                        copy--;
+                      }
 
-          {/* 페이지네이션 */}
-          <ul className="flex gap-2.5 items-center">
-            <button
-              onClick={handlePrevPage}
-              className="p-2.5 cursor-pointer bg-gray-50 hover:bg-gray-100 text-black rounded"
-            >
-              <IoChevronBack />
-            </button>
+                      onSubmit(copy);
+                      setCurrentPage(copy);
+                    }}
+                  >
+                    <IoChevronBack />
+                  </button>
+                </li>
+              )}
+              {Array.from({ length: Math.ceil(totalCount / 20) }).map(
+                (_, index) => {
+                  const selected = currentPage === index + 1;
+                  const li = (
+                    <li key={index}>
+                      <button
+                        className={twMerge(
+                          btn,
+                          "size-8 bg-gray-50 hover:bg-gray-100 text-black",
+                          selected && "bg-sky-500 text-white hover:bg-sky-400"
+                        )}
+                        onClick={() => {
+                          setCurrentPage(index + 1);
+                          onSubmit(index + 1);
+                        }}
+                      >
+                        {index + 1}
+                      </button>
+                    </li>
+                  );
 
-            {getPaginationRange().map((page) => (
-              <li key={page}>
-                <button
-                  className={twMerge(
-                    btn,
-                    "size-8 bg-gray-50 hover:bg-gray-100 text-black"
-                  )}
-                  onClick={() => {
-                    setCurrentPage(page);
-                    onSubmit(page);
-                  }}
-                >
-                  {page}
-                </button>
-              </li>
-            ))}
+                  const totalLength = Math.ceil(totalCount / 20);
+                  const length = 5; // 현재 페이지를 포함 +- 2개씩
+                  const arr = Array.from({ length });
+                  //! currentPage === 1 왼쪽에 숫자 없음, 오른쪽에 2, 3
+                  //! currentpage === 2 1, 3,4
+                  //! 3 1,2,4,5
+                  //! 4 1,2,3,5,6
+                  //! 25 1, 23, 24, 26, 27, 28
+                  //! 26 1, 24, 25, 27, 28
+                  //! 27 => 1, 25, 26, 28
+                  //! 28 => 1, 26, 27, 28
 
-            <button
-              onClick={handleNextPage}
-              className="p-2.5 cursor-pointer bg-gray-50 hover:bg-gray-100 text-black rounded"
-            >
-              <IoChevronForward />
-            </button>
-          </ul>
+                  const items: number[] = [];
+                  arr.map((_, i) => {
+                    let res = -1;
+                    if (i === 2) {
+                      res = -1;
+                    } else {
+                      res = currentPage + i - 2;
+                    }
+                    if (res >= 0 && res <= totalLength) {
+                      items.push(res);
+                    }
+                  });
 
-          {/* 검색 결과가 없을 때 */}
-          {items.length === 0 && (
-            <label htmlFor="keyword" className="text-sm text-gray-500">
-              해당 검색어로 조회된 주소가 존재하지 않습니다.
-            </label>
-          )}
-        </div>
-      )}
+                  if (
+                    index === 0 ||
+                    index + 1 === totalLength ||
+                    index + 1 === currentPage ||
+                    items.find((item) => item === index + 1)
+                  ) {
+                    return li;
+                  }
 
-      {/* 선택된 주소와 나머지 주소 입력 폼 */}
-      {selectedJuso && (
+                  return null;
+                }
+              )}
+              {Math.ceil(totalCount / 20) !== currentPage && (
+                <li>
+                  <button
+                    className={twMerge(btn, "size-8")}
+                    onClick={() => {
+                      let copy = currentPage;
+                      if (copy < Math.ceil(totalCount / 20)) {
+                        copy++;
+                      }
+
+                      onSubmit(copy);
+                      setCurrentPage(copy);
+                    }}
+                  >
+                    <IoChevronForward />
+                  </button>
+                </li>
+              )}
+            </ul>
+          </div>
+        ) : (
+          <label htmlFor="keyword">
+            해당 검색어로 조회된 주소가 존재하지 않습니다.
+          </label>
+        ))}
+
+      {juso && (
         <form
           className="flex flex-col gap-y-2.5"
           onSubmit={(e) => {
@@ -225,22 +268,30 @@ const Juso = () => {
             onSaveJuso();
           }}
         >
-          <div>
-            <label htmlFor="keyword">{selectedJuso.roadAddr}</label>
-            <label htmlFor="zipNo">{selectedJuso.zipNo}</label>
+          <div className="flex gap-x-2.5">
+            <label
+              htmlFor="keyword"
+              className={twMerge(input, "flex items-center flex-1")}
+            >
+              {juso.roadAddr}
+            </label>
+            <label
+              htmlFor="keyword"
+              className={twMerge(input, "flex items-center w-auto")}
+            >
+              {juso.zipNo}
+            </label>
           </div>
           <div className="flex gap-x-2.5">
             <input
-              type="text"
               value={rest}
               onChange={(e) => setRest(e.target.value)}
               placeholder="나머지 주소"
               className={twMerge(input, "flex-1")}
+              ref={restRef}
             />
+            <button className={btn}>저장</button>
           </div>
-          <button type="submit" className={btn}>
-            저장
-          </button>
         </form>
       )}
     </div>
