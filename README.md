@@ -1,86 +1,36 @@
-# 영화정보통
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-tmdb라고하는 api를 사용하고 익숙해질 수 있도록 next를 사용하여서 개발함.
+## Getting Started
 
-- 영화 정보 공유 하는 웹사이트
-- 스크랩, 링크 공유도 가능함
-- 문자 보내기 기능도 있음
-- 해당 영화를 클릭 시 관련 영화를 추천 해줌
-- 관련 영화는 1초마다 자동으로 전환되는 슬라이드 사용
+First, run the development server:
 
-## 페이지 상세 요구사항
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
+```
 
-1. 홈페이지
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-   - 그리드를 통해 화면 사이즈 별 카드 컴포넌트 개수를 2->3->4 순서로 출력
-   - 하단 부분에 스크롤을 감지하도록 만들어서 무한 스크롤 구현
-   - 리액트 쿼리 대신 리액트 + 웹브라우저 API 기능만으로 구현
-   - 카드 컴포넌트를 클릭시 디테일 페이지로 이동할 수 있게 됨
-   - Next/Link 컴포넌트 사용하여 구현
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-2. 상세페이지
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-   - 영화 원 제목 있을 시 원제목 표현
-   - 장르 보여주기
-   - 링크 복사 버튼
-   - 스크랩 기능
-   - 관련 장르 영화 추천 슬라이드
-   - 1초마다 새로운 영화가 보여줄 수 있도록 자동 플레이
+## Learn More
 
-   - navigator.clipboard.writeText 함수를 통해 코드 복사하기 구현
-   - 스크랩시 navigator.userAgent를 로컬 스토레지에 담아서 스크랩 기능 구현
-   - next/navigation의 useRouter 훅을 사용해 위의 특정 동작 실행 후 페이지 이동을 구현
-   - react slick 라이브러리 설치하여 슬라이드를 구현
+To learn more about Next.js, take a look at the following resources:
 
-3. 나의 페이지
-   - 내가 스크랩한 영화를 로컬스토레지에 저장해두고 나의 페이지를 방문했을 때 페이지 컴포넌트가 로딩되면 스크랩한 영화들을 출력
-   - 내가 스크랩한 영화만 마우스 올리면 링크 복사 기능 구현
-   - onMouseEnter, onMouseLeave 속성을 이용해서 마우스 올라갔을 때를 감지
-     하여 구현
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
-### 사용 기술 스택
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-1. next js
+## Deploy on Vercel
 
-- 리액트를 사용하긴 하지만 모든 컴포넌트는 server component임. 서버에서 데이터를 가지고 와서 페이지를 출력할 수 있음.
-- 초기 로딩 시간을 줄여주는 효과
-- 데이터를 가지고 시작함
-- page.tsx 라는 페이지 에서는 기본적으로 props를 가지고 있음. params, searchparams를 await를 걸어서 바로 볼 수 있음
-- rrd 에서는 useParams, useSerachParams라는 훅을 써야 했지만 nextjs 그냥 쓸 수 있음
-- 'use client'라고 하는 문구를 최상단에 적으면 해당 컴포너트는 서버 컴포넌트가 아니게 되면서 리액트 훅을 사용할 수 있음
-- 추가적으로 nexct의 useRouter, useParms, useSearchParams 등의 훅을 사용할수 있음
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
-2. react query
-   -next 환경에서는 'use client'를 사용한 뒤에만 사용 가능함.
-
-- **SSR + react query 조합 공부하기**
-
-3. react slick
-
-- react-slick 설치 후 @types/react-slick 별도 설치해야함
-- react-carousel을 별도 설치한 뒤 스타일 불러와야 함
-- react-slick을 Slider로 불러와서 ref 넣어서 조작도 가능(이전, 다음 버튼 구현 등)
-- Slider 안에 map으로 자료를 뿌려서 슬라이드 만들면 개꿀.
-- **홈페이지에 중요한 후킹 메세지 등을 슬라이드에 담아서 구현해보기**
-
-4. vercel-deployment
-   **장점**
-   깃허브 리파지토리 불러와서 바로 배포 가능, 깃허브에 푸쉬하면 자동으로 잠깐의 시간 뒤에 업데이트 적용 됨, 다이네믹 링크를 잘 보여줌. (vite + gh-page로는 안됨) + 무료
-
-   **단점**
-   환경변수 일일이 적어줘야 함, 배포에서 문제가 생기면 버셀의 인터페이스에 적응해야하는 시간이 있음 무료버전 한계 존재. 유료 돈 많이 듬
-
-5. 무한 스크롤
-
-   - 페이지: 내가 현재 불러온 아이템의 페이지 + 앞으로 불러올 페이지의 개수 또는 가능 여부 조건 실행
-   - 로딩상태: 최초 데이터 로딩상태 + 다음 페이지의 데이터 로딩 상태가 추가적으로 생김
-   - 트리거: 언제 어떻게 로딩할지 전략 수립 - 어떠한 컴포넌트가 화면에 들어오는 시점에 기준으로 다음 페이지 데이터를 출력
-
-   - 옵저버 API : new IntersectionObserver() 콜백함수로 entries라는 배열을 받아와서 조건 처리함 감지할 수 있도로고 observe라는 하는 함수를 사용해 ref를 전달하여 감지함 useEffect 조합으로 감지 -> 감지해제 패턴 적용하여 구현
-   - 다음페이지가져오는 함수:기존 데이터에 새로운 데이터를 병합하는 방식을 사용-> 기존 데이터 담을 그릇, 새로운 데이터 담을 그릇 총 2개.
-   - 조건 감지: 트리거로 발동되면 새로운 데이터를 가져오는 상태인지, 다음 페이지가 있는지 를 동시에 검사해야 함
-   - 페이지를 다 가져오면: 새로운 데이터를 기존데이터에 병합한뒤 새로운 데이터 비우기. 새로운 데이터 가져오는 로딩 상태 초기화 하기, 가져온 페이지의 페이지 넘버 업데이트 하기
-
-6. react-query의 useInfiniteQuery => 무한 스크롤 구현에 사용하는 함수
-7. react-intersection-observer => 감지 트리거
-   **6,7 응용버전 생각하고 적용해보기**
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
