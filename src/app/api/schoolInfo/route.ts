@@ -1,13 +1,18 @@
-export async function GET() {
-  const serviceKey = process.env.NEXT_PUBLIC_W_SERVICE_KEY;
+// /app/api/schoolInfo/route.ts
+import { NextRequest } from "next/server";
+
+export async function GET(req: NextRequest) {
+  const serviceKey = process.env.NEXT_PUBLIC_W_SERVICE_KEY!;
   const pageNo = 1;
-  const numOfRows = 20;
-  const encodedKey = encodeURIComponent(serviceKey!);
-  const gu = "A"; // 고등학교 전체
+  const numOfRows = 50;
+
+  // ✅ 쿼리 파라미터에서 gu 가져오기 (기본값 H)
+  const gu = req.nextUrl.searchParams.get("gu") || "H";
+  const encodedKey = encodeURIComponent(serviceKey);
 
   const url = `https://apis.data.go.kr/6300000/openapi2022/midHighSchInfo/getmidHighSchInfo?serviceKey=${encodedKey}&gu=${gu}&pageNo=${pageNo}&numOfRows=${numOfRows}&dataType=json`;
 
-  console.log("✅ 요청 URL:", url);
+  console.log("✅ 호출 URL:", url);
 
   try {
     const res = await fetch(url);
