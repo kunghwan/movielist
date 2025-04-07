@@ -28,18 +28,18 @@ type SchoolData = {
   items: SchoolItem[];
 };
 
-// ✅ 자치구 목록 (기타 포함)
+// ✅ 자치구 항목
 const ALL_GUS = ["동구", "중구", "서구", "유성", "대덕", "기타"];
 
 const Page = () => {
-  const [data, setData] = useState<SchoolData | null>(null);
+  const [data, setData] = useState<SchoolItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [type, setType] = useState<"M" | "H">("H");
   const [filter, setFilter] = useState<"전체" | "공립" | "사립">("전체");
   const [selectedGus, setSelectedGus] = useState<string[]>([...ALL_GUS]);
 
-  // ✅ 자치구 분류 (null 방지 포함)
+  // ✅ 자치구 분류 함수
   const getGuCategory = (signgu?: string): string => {
     if (!signgu || typeof signgu !== "string") return "기타";
     if (signgu.includes("동구")) return "동구";
@@ -50,16 +50,26 @@ const Page = () => {
     return "기타";
   };
 
+  // ✅ 자치구별 개수 계산
+  const getGuCounts = (items: SchoolItem[]) => {
+    const counts: Record<string, number> = {};
+    ALL_GUS.forEach((gu) => (counts[gu] = 0));
+    for (const item of items) {
+      const gu = getGuCategory(item.signgu);
+      counts[gu]++;
+    }
+    return counts;
+  };
+
   const fetchData = async (gu: "M" | "H") => {
     setLoading(true);
     setError(null);
-
     try {
       const res = await fetch(`/api/schoolInfo?gu=${gu}`);
       if (!res.ok) throw new Error("API 실패");
 
       const json = await res.json();
-      setData(json);
+      setData(json.items ?? []);
     } catch (err) {
       console.error("❌ fetch 오류:", err);
       setError("데이터를 불러오는 중 오류 발생");
@@ -82,9 +92,13 @@ const Page = () => {
     }
   };
 
-  const filteredItems = data?.items
-    ?.filter((school) => selectedGus.includes(getGuCategory(school.signgu)))
-    ?.filter((school) => filter === "전체" || school.fondSe === filter);
+  // ✅ 필터링된 데이터
+  const filteredItems = data
+    .filter((school) => selectedGus.includes(getGuCategory(school.signgu)))
+    .filter((school) => filter === "전체" || school.fondSe === filter);
+
+  // ✅ 자치구별 개수 집계
+  const guCounts = getGuCounts(data);
 
   if (loading) return <div>로딩 중...</div>;
   if (error) return <div>{error}</div>;
@@ -93,7 +107,7 @@ const Page = () => {
     <div style={{ padding: "1rem" }}>
       <h1>🏫 대전광역시 {type === "M" ? "중학교" : "고등학교"} 정보</h1>
 
-      {/* ✅ 중/고등학교 버튼 */}
+      {/* ✅ 중/고 버튼 */}
       <div style={{ marginBottom: "1rem" }}>
         <button onClick={() => setType("M")} disabled={type === "M"}>
           중학교
@@ -141,7 +155,7 @@ const Page = () => {
         </label>
       </div>
 
-      {/* ✅ 자치구 필터 */}
+      {/* ✅ 자치구 필터 + 개수 */}
       <div style={{ marginBottom: "1rem" }}>
         <strong>자치구:</strong>
         {ALL_GUS.map((gu) => (
@@ -152,16 +166,16 @@ const Page = () => {
               checked={selectedGus.includes(gu)}
               onChange={() => handleGuChange(gu)}
             />
-            {gu}
+            {gu} ({guCounts[gu]})
           </label>
         ))}
       </div>
 
-      {/* ✅ 데이터 출력 */}
+      {/* ✅ 결과 출력 */}
       <div className="p-4 bg-sky-300 rounded-2xl">
-        <p>총 {filteredItems?.length ?? 0}개 학교</p>
+        <p>총 {filteredItems.length}개 학교</p>
         <ul>
-          {filteredItems?.map((school, idx) => (
+          {filteredItems.map((school, idx) => (
             <li
               key={idx}
               style={{
@@ -171,7 +185,7 @@ const Page = () => {
               }}
             >
               <h3>
-                {school.schulNm} ({school.signgu ?? "자치구 없음"})
+                {school.schulNm} ({school.signgu || "자치구 없음"})
               </h3>
               <p>📍 주소: {school.locplc}</p>
               <p>🏫 설립구분: {school.fondSe}</p>
