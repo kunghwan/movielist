@@ -1,43 +1,33 @@
-// pages/api/schoolInfo.ts
-
+// `GET` 메서드를 export하여 Next.js에서 API 라우트로 사용할 수 있게 합니다.
 export async function GET() {
-  const serviceKey = process.env.NEXT_PUBLIC_W_SERVICE_KEY; // 환경변수에서 서비스 키를 읽어옵니다.
-  const pageNo = 1; // 페이지 번호는 1로 고정
+  // 환경 변수에서 API 키를 불러옵니다 (보안상 코드에 직접 쓰지 않고 환경 변수 사용).
+  const serviceKey = process.env.NEXT_PUBLIC_W_SERVICE_KEY;
 
-  // 실제 API URL 만들기
+  // 요청할 페이지 번호를 설정합니다. (현재는 1페이지 고정)
+  const pageNo = 1;
+
+  // API 호출을 위한 URL을 만듭니다.
+  // `${}` 문법으로 serviceKey와 pageNo를 URL에 동적으로 삽입합니다.
   const url = `http://apis.data.go.kr/6300000/openapi2022/midHighSchInfo?dataType=JSON&serviceKey=${serviceKey}&pageNo=${pageNo}`;
 
-  console.log("URL:", url); // URL을 출력하여 서비스 키와 페이지 번호가 잘 들어갔는지 확인
+  // fetch 함수를 이용해 해당 URL로 HTTP 요청을 보냅니다.
+  const res = await fetch(url);
 
-  try {
-    const res = await fetch(url); // fetch 호출
+  // 응답을 JSON 형태로 파싱합니다.
+  const data = await res.json();
 
-    // 네트워크 오류 처리
-    if (!res.ok) {
-      console.error("API 요청 실패:", res.statusText);
-      return new Response(
-        JSON.stringify({ error: "API 요청 실패: " + res.statusText }),
-        { status: 500 }
-      );
-    }
-
-    const data = await res.json(); // JSON 데이터로 응답을 변환
-
-    // API 오류 처리: resultCode가 "01"이면 오류 응답
-    if (data.response?.header?.resultCode === "01") {
-      return new Response(
-        JSON.stringify({ error: data.response.header.resultMsg }),
-        { status: 500 }
-      );
-    }
-
-    // 정상 응답
-    return new Response(JSON.stringify(data.response), { status: 200 });
-  } catch (error) {
-    console.error("API 호출 중 오류 발생:", error);
+  // 오류 처리: 응답의 resultCode가 "01"이면 실패한 요청입니다.
+  // 이 경우, error 메시지를 담아 500 상태 코드와 함께 반환합니다.
+  if (data.response?.header?.resultCode === "01") {
     return new Response(
-      JSON.stringify({ error: "서버 오류가 발생했습니다." }),
-      { status: 500 }
+      JSON.stringify({ error: data.response.header.resultMsg }), // 에러 메시지를 JSON 형식으로 변환
+      {
+        status: 500, // 서버 오류 상태 코드
+      }
     );
   }
+
+  // 문제가 없으면, 응답 데이터 중 response 객체만 JSON으로 반환합니다.
+  // 상태 코드는 200 (성공)입니다.
+  return new Response(JSON.stringify(data.response), { status: 200 });
 }
