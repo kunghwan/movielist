@@ -1,90 +1,63 @@
 "use client";
 
-import { useState } from "react";
-import {
-  IoMdArrowDropdown,
-  IoMdArrowDropup,
-  IoMdCheckmark,
-} from "react-icons/io";
-import { twMerge } from "tailwind-merge";
-import { schoolType } from "./dummy";
+import React, { useEffect, useState } from "react";
 
-const page = () => {
-  const [button, setButton] = useState(false);
-  const [checkboxState, setCheckboxState] = useState<{ [key: string]: bo }>(
-    false
-  );
+type SchoolItem = {
+  schoolNm: string;
+  adres: string;
+  type: string;
+  lctn: string;
+};
 
-  const stateChange = () => {
-    setButton(true);
-    setTimeout(() => {
-      setButton(false);
-    }, 500);
-  };
+type SchoolData = {
+  totalCount: number;
+  items: SchoolItem[];
+};
 
-  const checkboxStateChange = () => {
-    setCheckboxState((prev) => !prev);
-  };
+const Page = () => {
+  const [data, setData] = useState<SchoolData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res = await fetch("/api/schoolInfo");
+        if (!res.ok) throw new Error("API 실패");
+
+        const json = await res.json();
+        setData(json); // ✅ 여기가 핵심!
+      } catch (err) {
+        console.error("❌ fetch 오류:", err);
+        setError("데이터를 불러오는 중 오류 발생");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  if (loading) return <div>로딩 중...</div>;
+  if (error) return <div>{error}</div>;
 
   return (
-    <>
-      <div className="border rounded-full p-3 flex w-200 mx-auto">
-        <div className="flex justify-between w-full">
-          <input
-            type="text"
-            placeholder="검색어를 입력하세요."
-            className=" rounded-full p-4 bg-gray-100 w-100 "
-          />
-
-          <div
-            className={twMerge(
-              "text-center rounded-full p-4  text-white outline-none font-bold text-xl bg-amber-200 items-center flex gap-x-1.5",
-              `${button ? "bg-amber-500" : ""}`
-            )}
-          >
-            학교정보 상세검색
-            <button
-              className={twMerge(
-                "rounded-full bg-sky-200 p-1 ",
-                `${button ? "animate-spin " : ""}`
-              )}
-              onClick={stateChange}
-            >
-              {button ? <IoMdArrowDropup /> : <IoMdArrowDropdown />}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* 항목별로 학교 고르기 */}
-      <div className="border mt-2.5 w-200 mx-auto">
-        유형선택
-        <div className=" border-t p-2.5">
-          <p>학교유형</p>
-          <ul className="grid grid-cols-2 mt-2 ml-5  gap-y-1.5">
-            {schoolType.map((school) => {
-              return (
-                <>
-                  <div className="flex gap-2.5">
-                    <div
-                      className={twMerge(
-                        "border rounded p-1 cursor-pointer",
-                        `${checkboxState ? "bg-amber-400" : ""}`
-                      )}
-                      onClick={checkboxStateChange}
-                    >
-                      <IoMdCheckmark />
-                    </div>
-                    <li key={school}>{school}</li>
-                  </div>
-                </>
-              );
-            })}
-          </ul>
-        </div>
-      </div>
-    </>
+    <div>
+      <h1>📘 대전광역시 중·고등학교 정보</h1>
+      <p>총 {data?.totalCount}개 학교</p>
+      <ul>
+        {data?.items.map((school, idx) => (
+          <li key={idx} style={{ marginBottom: "1rem" }}>
+            <strong>{school.schoolNm}</strong>
+            <br />
+            📍 {school.adres}
+            <br />
+            🏫 {school.type} / {school.lctn}
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 };
 
-export default page;
+export default Page;

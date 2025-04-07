@@ -1,27 +1,24 @@
-// pages/api/schoolInfo.ts
-import { NextResponse } from "next/server";
-import axios from "axios";
-
 export async function GET() {
-  const API_URL = "http://apis.data.go.kr/6300000/openapi2022/midHighSchInfo"; // 공공데이터 API URL
-  const API_KEY = process.env.NEXT_PUBLIC_JUSO_API_KEY; // .env.local에서 API 키를 가져옴
+  const serviceKey = process.env.NEXT_PUBLIC_W_SERVICE_KEY; // 환경 변수에서 API 키를 불러옵니다.
+  const pageNo = 1;
 
-  try {
-    const response = await axios.get(API_URL, {
-      params: {
-        serviceKey: API_KEY, // API 키
-        query: "서구", // 예시: 검색할 지역명
-        page: 1, // 페이지 번호
-        per_page: 20, // 한 페이지에 출력할 항목 수
-      },
-    });
+  // URL에 serviceKey와 pageNo가 제대로 들어가도록 수정
+  const url = `http://apis.data.go.kr/6300000/openapi2022/midHighSchInfo?dataType=JSON&serviceKey=${serviceKey}&pageNo=${pageNo}`;
 
-    return NextResponse.json(response.data); // API 응답을 클라이언트로 전달
-  } catch (error) {
-    console.error("API 요청 중 오류 발생:", error);
-    return NextResponse.json(
-      { error: "API 요청 중 오류 발생" },
-      { status: 500 }
+  // API 호출
+  const res = await fetch(url);
+  const data = await res.json();
+
+  // 오류 처리: resultCode가 "01"이면 에러 메시지 반환
+  if (data.response?.header?.resultCode === "01") {
+    return new Response(
+      JSON.stringify({ error: data.response.header.resultMsg }),
+      {
+        status: 500,
+      }
     );
   }
+
+  // 정상 응답 반환
+  return new Response(JSON.stringify(data.response), { status: 200 });
 }
