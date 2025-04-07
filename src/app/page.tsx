@@ -3,24 +3,24 @@
 import React, { useEffect, useState } from "react";
 
 type SchoolItem = {
-  signgu: string; // 자치구
-  fondSe: string; // 사립/공립
-  schulNm: string; // 학교명
-  locplc: string; // 주소
-  clasCo: string; // 학급수 합계
-  nclasCo: string; // 일반 학급수
-  aclasCo: string; // 1학년 학급수
-  bclasCo: string; // 2학년 학급수
-  cclasCo: string; // 3학년 학급수
-  sclasCo: string; // 특수학년 학급수
-  stdntCo: string; // 학년별 학생수
-  astdntCo: string; // 1학년 학생수
-  bstdntCo: string; // 2학년 학생수
-  cstdntCo: string; // 3학년 학생수
-  csttCo: string; // 학년별 급당인원
-  acsttCo: string; // 1학년급당인원
-  bcsttCo: string; // 2학년급당인원
-  ccsttCo: string; // 3학년급당인원
+  signgu?: string;
+  fondSe: string;
+  schulNm: string;
+  locplc: string;
+  clasCo: string;
+  nclasCo: string;
+  aclasCo: string;
+  bclasCo: string;
+  cclasCo: string;
+  sclasCo: string;
+  stdntCo: string;
+  astdntCo: string;
+  bstdntCo: string;
+  cstdntCo: string;
+  csttCo: string;
+  acsttCo: string;
+  bcsttCo: string;
+  ccsttCo: string;
 };
 
 type SchoolData = {
@@ -28,11 +28,27 @@ type SchoolData = {
   items: SchoolItem[];
 };
 
+// ✅ 자치구 목록 (기타 포함)
+const ALL_GUS = ["동구", "중구", "서구", "유성", "대덕", "기타"];
+
 const Page = () => {
   const [data, setData] = useState<SchoolData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [type, setType] = useState<"M" | "H">("H"); // 기본: 고등학교
+  const [type, setType] = useState<"M" | "H">("H");
+  const [filter, setFilter] = useState<"전체" | "공립" | "사립">("전체");
+  const [selectedGus, setSelectedGus] = useState<string[]>([...ALL_GUS]);
+
+  // ✅ 자치구 분류 (null 방지 포함)
+  const getGuCategory = (signgu?: string): string => {
+    if (!signgu || typeof signgu !== "string") return "기타";
+    if (signgu.includes("동구")) return "동구";
+    if (signgu.includes("중구")) return "중구";
+    if (signgu.includes("서구")) return "서구";
+    if (signgu.includes("유성")) return "유성";
+    if (signgu.includes("대덕")) return "대덕";
+    return "기타";
+  };
 
   const fetchData = async (gu: "M" | "H") => {
     setLoading(true);
@@ -54,7 +70,21 @@ const Page = () => {
 
   useEffect(() => {
     fetchData(type);
+    setFilter("전체");
+    setSelectedGus([...ALL_GUS]);
   }, [type]);
+
+  const handleGuChange = (gu: string) => {
+    if (selectedGus.includes(gu)) {
+      setSelectedGus(selectedGus.filter((g) => g !== gu));
+    } else {
+      setSelectedGus([...selectedGus, gu]);
+    }
+  };
+
+  const filteredItems = data?.items
+    ?.filter((school) => selectedGus.includes(getGuCategory(school.signgu)))
+    ?.filter((school) => filter === "전체" || school.fondSe === filter);
 
   if (loading) return <div>로딩 중...</div>;
   if (error) return <div>{error}</div>;
@@ -63,7 +93,7 @@ const Page = () => {
     <div style={{ padding: "1rem" }}>
       <h1>🏫 대전광역시 {type === "M" ? "중학교" : "고등학교"} 정보</h1>
 
-      {/* ✅ 버튼 두 개 */}
+      {/* ✅ 중/고등학교 버튼 */}
       <div style={{ marginBottom: "1rem" }}>
         <button onClick={() => setType("M")} disabled={type === "M"}>
           중학교
@@ -77,39 +107,93 @@ const Page = () => {
         </button>
       </div>
 
-      <p>총 {data?.totalCount}개 학교</p>
-      <ul>
-        {data?.items.map((school, idx) => (
-          <li
-            key={idx}
-            style={{
-              marginBottom: "2rem",
-              borderBottom: "1px solid #ccc",
-              paddingBottom: "1rem",
-            }}
-          >
-            <h3>
-              {school.schulNm} ({school.signgu})
-            </h3>
-            <p>📍 주소: {school.locplc}</p>
-            <p>🏫 설립구분: {school.fondSe}</p>
-            <p>
-              🧩 일반학급: {school.nclasCo} / 특수학급: {school.sclasCo}
-            </p>
-            <p>
-              👨‍🎓 학년별 학급: {school.aclasCo}, {school.bclasCo},{" "}
-              {school.cclasCo}
-            </p>
-            <p>
-              👩‍🎓 학년별 학생수: {school.astdntCo}, {school.bstdntCo},{" "}
-              {school.cstdntCo}
-            </p>
-            <p>
-              📊 급당 인원: {school.acsttCo}, {school.bcsttCo}, {school.ccsttCo}
-            </p>
-          </li>
+      {/* ✅ 공립/사립 필터 */}
+      <div style={{ marginBottom: "1rem" }}>
+        <label>
+          <input
+            type="radio"
+            name="schoolType"
+            value="전체"
+            checked={filter === "전체"}
+            onChange={() => setFilter("전체")}
+          />
+          전체
+        </label>
+        <label style={{ marginLeft: "1rem" }}>
+          <input
+            type="radio"
+            name="schoolType"
+            value="공립"
+            checked={filter === "공립"}
+            onChange={() => setFilter("공립")}
+          />
+          공립
+        </label>
+        <label style={{ marginLeft: "1rem" }}>
+          <input
+            type="radio"
+            name="schoolType"
+            value="사립"
+            checked={filter === "사립"}
+            onChange={() => setFilter("사립")}
+          />
+          사립
+        </label>
+      </div>
+
+      {/* ✅ 자치구 필터 */}
+      <div style={{ marginBottom: "1rem" }}>
+        <strong>자치구:</strong>
+        {ALL_GUS.map((gu) => (
+          <label key={gu} style={{ marginLeft: "1rem" }}>
+            <input
+              type="checkbox"
+              value={gu}
+              checked={selectedGus.includes(gu)}
+              onChange={() => handleGuChange(gu)}
+            />
+            {gu}
+          </label>
         ))}
-      </ul>
+      </div>
+
+      {/* ✅ 데이터 출력 */}
+      <div className="p-4 bg-sky-300 rounded-2xl">
+        <p>총 {filteredItems?.length ?? 0}개 학교</p>
+        <ul>
+          {filteredItems?.map((school, idx) => (
+            <li
+              key={idx}
+              style={{
+                marginBottom: "2rem",
+                borderBottom: "1px solid #ccc",
+                paddingBottom: "1rem",
+              }}
+            >
+              <h3>
+                {school.schulNm} ({school.signgu ?? "자치구 없음"})
+              </h3>
+              <p>📍 주소: {school.locplc}</p>
+              <p>🏫 설립구분: {school.fondSe}</p>
+              <p>
+                🧩 일반학급: {school.nclasCo} / 특수학급: {school.sclasCo}
+              </p>
+              <p>
+                👨‍🎓 학년별 학급: 1학년 {school.aclasCo}개, 2학년 {school.bclasCo}
+                개, 3학년 {school.cclasCo}개
+              </p>
+              <p>
+                👩‍🎓 학년별 학생수: {school.astdntCo}, {school.bstdntCo},{" "}
+                {school.cstdntCo}
+              </p>
+              <p>
+                📊 급당 인원: {school.acsttCo}, {school.bcsttCo},{" "}
+                {school.ccsttCo}
+              </p>
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 };
