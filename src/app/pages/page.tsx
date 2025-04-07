@@ -1,64 +1,63 @@
+// app/page.tsx
 "use client";
 
-import { useEffect, useState } from "react";
-import axios from "axios";
+import React, { useEffect, useState } from "react";
+
+type SchoolData = {
+  totalCount: number;
+  items: Array<{ schoolName: string; address: string }>;
+};
 
 const Page = () => {
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<SchoolData | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // AllOrigins 프록시 사용
-        const response = await axios.get("https://api.allorigins.win/get", {
-          params: {
-            url: "http://apis.data.go.kr/6300000/openapi2022/midHighSchInfo",
-            serviceKey:
-              "Bn899qxpRVf7ahZd8JaBjgm8EBDZ6HlIFJMWVGXpwzgtqeCU4z5tHAGB6Mf6VLHFhwukTYAIDVoFrlwAdT15Bg",
-            query: "대전",
-            page: 1,
-            per_page: 30,
-          },
-        });
+        const response = await fetch("/api/proxy"); // 프록시 API 호출
+        if (!response.ok) {
+          throw new Error("데이터를 가져오는 데 실패했습니다");
+        }
 
-        // AllOrigins는 JSONP 형식으로 반환하므로, 이를 파싱합니다.
-        const jsonData = JSON.parse(response.data.contents);
-        setData(jsonData.response.body.items);
-      } catch (err) {
-        setError("API 요청 실패");
+        const result = await response.json();
+        setData(result); // API 응답 데이터를 상태에 저장
+      } catch (error) {
+        console.error("데이터를 가져오는 중 오류 발생:", error);
+        setError("데이터를 가져오는 중 오류가 발생했습니다");
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchData();
   }, []);
 
+  if (loading) {
+    return <div>로딩 중...</div>;
+  }
+
+  if (error) {
+    return <div>{error}</div>;
+  }
+
   return (
     <div>
       <h1>학교 정보</h1>
-      {error && <p>{error}</p>}
       {data ? (
-        <ul>
-          {data.map((school: any, index: number) => (
-            <li key={index}>
-              <h2>
-                {school.schulNm} ({school.fondSe})
-              </h2>
-              <p>위치: {school.locplc}</p>
-              <p>학급 수: {school.clasCo}</p>
-              <p>학생 수: {school.stdntCo}</p>
-              <p>학생/교사 비율: {school.csttCo}%</p>
-              <p>학생 수 - A등급: {school.astdntCo}</p>
-              <p>학생 수 - B등급: {school.bstdntCo}</p>
-              <p>학생 수 - C등급: {school.cstdntCo}</p>
-              <p>학생/교사 비율 - A등급: {school.acsttCo}%</p>
-              <p>학생/교사 비율 - B등급: {school.bcsttCo}%</p>
-              <p>학생/교사 비율 - C등급: {school.ccsttCo}%</p>
-            </li>
-          ))}
-        </ul>
+        <div>
+          <p>총 학교 수: {data.totalCount}</p>
+          <ul>
+            {data.items.map((school, index) => (
+              <li key={index}>
+                <strong>{school.schoolName}</strong> - {school.address}
+              </li>
+            ))}
+          </ul>
+        </div>
       ) : (
-        <p>로딩 중...</p>
+        <p>데이터가 없습니다.</p>
       )}
     </div>
   );
